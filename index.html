@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ITO Apps Transition – Staffing Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── ACCENTURE EXECUTIVE LEADERSHIP THEME ── */
+:root {
+  --acc-purple:   #A100FF;
+  --acc-purple-lt:#F0E0FF;
+  --qbe-blue:     #0047BB;
+  --qbe-blue-lt:  #E0EBFF;
+
+  --bg:       #F7F7F7;
+  --surface:  #FFFFFF;
+  --surface2: #F2F2F2;
+  --surface3: #E8E8E8;
+  --border:   #E0E0E0;
+  --border2:  #C8C8C8;
+
+  --danger:   #C0392B;
+  --warn:     #C06000;
+  --ok:       #0A6632;
+
+  --text:     #1A1A1A;
+  --text2:    #4A4A4A;
+  --text3:    #8A8A8A;
+  --text-inv: #FFFFFF;
+
+  --font: 'Inter', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;min-height:100vh}
+a{color:var(--acc-purple)}
+
+/* ── HEADER — white background to suit both brand logos ── */
+.header{
+  background:#FFFFFF;
+  border-bottom:3px solid var(--acc-purple);
+  box-shadow:0 1px 6px rgba(0,0,0,.08);
+  padding:0 32px;
+  display:flex;align-items:stretch;justify-content:space-between;
+  position:sticky;top:0;z-index:100;min-height:64px;
+}
+.header-left{display:flex;align-items:center;gap:0}
+
+.acc-logo{
+  display:flex;align-items:center;
+  padding:0 24px 0 0;margin-right:20px;
+  border-right:1px solid #E0E0E0;height:64px;
+}
+.qbe-logo{
+  display:flex;align-items:center;
+  padding:0 24px 0 0;margin-right:24px;
+  border-right:1px solid #E0E0E0;height:64px;
+}
+
+.header-title{padding:17px 0}
+.header-title h1{font-size:14px;font-weight:600;color:#1A1A1A;letter-spacing:.01em}
+.header-title p{font-size:11px;color:#888888;margin-top:3px;letter-spacing:.03em}
+.header-right{display:flex;gap:8px;align-items:center}
+
+/* ── FILTERS ── */
+.filters{
+  background:#FFFFFF;border-bottom:1px solid var(--border);
+  padding:10px 32px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+  position:sticky;top:64px;z-index:90;
+  box-shadow:0 1px 4px rgba(0,0,0,.04);
+}
+.filters label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-right:4px;font-weight:600}
+select{
+  background:#FFFFFF;border:1px solid var(--border);color:var(--text);
+  font-family:var(--font);font-size:12px;padding:6px 10px;border-radius:0;cursor:pointer;outline:none;
+}
+select:focus{border-color:var(--acc-purple);box-shadow:0 0 0 2px var(--acc-purple-lt)}
+.filter-group{display:flex;align-items:center;gap:6px}
+.btn-reset{
+  background:transparent;border:1px solid var(--acc-purple);color:var(--acc-purple);
+  font-family:var(--font);font-size:10px;font-weight:700;padding:6px 14px;
+  cursor:pointer;text-transform:uppercase;letter-spacing:.1em;transition:background .15s,color .15s;
+}
+.btn-reset:hover{background:var(--acc-purple);color:#fff}
+.results-count{font-size:11px;color:var(--text3);margin-left:auto;font-weight:500}
+
+/* ── TABS ── */
+.tabs{
+  background:#FFFFFF;display:flex;padding:0 32px;
+  border-bottom:1px solid var(--border);
+  position:sticky;top:120px;z-index:80;
+  box-shadow:0 2px 4px rgba(0,0,0,.05);
+}
+.tab{
+  padding:14px 22px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text3);border-bottom:2px solid transparent;cursor:pointer;transition:all .15s;margin-bottom:-1px;
+}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--acc-purple);border-bottom-color:var(--acc-purple)}
+
+/* ── MAIN ── */
+.main{padding:28px 32px;max-width:1440px;margin:0 auto}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ── METRIC CARDS — clean tile grid with left accent bar ── */
+.metrics{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:12px;margin-bottom:28px;
+}
+.metric{
+  background:var(--surface);border:1px solid var(--border);
+  padding:20px 20px 16px;border-left:3px solid var(--border);
+  transition:border-left-color .2s;
+}
+.metric.accent{border-left-color:var(--acc-purple)}
+.metric.danger{border-left-color:var(--danger)}
+.metric.warn  {border-left-color:var(--warn)}
+.metric.ok    {border-left-color:var(--ok)}
+.metric-value{font-size:32px;font-weight:300;font-family:var(--mono);line-height:1;color:var(--text);letter-spacing:-.02em}
+.metric.danger .metric-value{color:var(--danger)}
+.metric.warn   .metric-value{color:var(--warn)}
+.metric.ok     .metric-value{color:var(--ok)}
+.metric.accent .metric-value{color:var(--acc-purple)}
+.metric-label{font-size:10px;color:var(--text3);margin-top:8px;text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.metric-sub{font-size:11px;color:var(--text3);margin-top:3px}
+
+/* ── GRID ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+/* ── CHART CARDS ── */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-top:2px solid var(--acc-purple);padding:20px;
+}
+.card-title{
+  font-size:10px;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.12em;margin-bottom:16px;
+}
+.chart-wrap{position:relative}
+
+/* ── WAVE CARDS ── */
+.waves{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:28px}
+.wave-card{background:var(--surface);border:1px solid var(--border);overflow:hidden}
+.wave-header{padding:13px 18px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.wave-header.critical{background:#C82020;color:#fff}
+.wave-header.high{background:#B05500;color:#fff}
+.wave-header.ok{background:#0A7A3E;color:#fff}
+.wave-body{padding:14px 18px}
+.wave-stat{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)}
+.wave-stat:last-child{border-bottom:none}
+.wave-stat span:first-child{color:var(--text2)}
+.wave-stat span:last-child{font-weight:600;font-family:var(--mono);color:var(--text)}
+.wave-sub{margin-top:12px}
+.wave-sub-title{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--text3);margin-bottom:7px;font-weight:700}
+.wave-pill{display:inline-block;padding:2px 9px;font-size:11px;margin:2px 2px 2px 0;font-weight:500;border:1px solid}
+.pill-region{background:rgba(161,0,255,.08);color:#7800CC;border:1px solid rgba(161,0,255,.2)}
+.pill-tower{background:rgba(0,71,187,.07);color:#0040AA;border:1px solid rgba(0,71,187,.18)}
+.pill-skill{background:#F0FBF5;color:#065028;border:1px solid rgba(6,80,40,.2)}
+.deadline-badge{display:inline-block;padding:3px 10px;font-size:11px;font-weight:700;font-family:var(--mono)}
+.deadline-critical{background:var(--danger);color:#fff}
+.deadline-high{background:var(--warn);color:#fff}
+.deadline-ok{background:var(--ok);color:#fff}
+
+/* ── PROGRESS BAR ── */
+.pbar{height:3px;background:var(--surface3);overflow:hidden;margin-top:8px}
+.pbar-fill{height:100%;transition:width .4s}
+.pbar-red  {background:var(--danger)}
+.pbar-amber{background:var(--warn)}
+.pbar-green{background:var(--ok)}
+.pbar-blue {background:var(--acc-purple)}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{
+  background:var(--surface2);color:var(--text2);
+  padding:10px 14px;text-align:left;font-weight:600;font-size:10px;
+  text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;
+  cursor:pointer;user-select:none;border-bottom:1px solid var(--border);
+}
+thead th:first-child{border-left:3px solid var(--acc-purple)}
+thead th:hover{color:var(--text)}
+thead th .sort-arrow{color:var(--text3);margin-left:5px}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:hover{background:rgba(161,0,255,.03)}
+tbody td{padding:9px 14px;color:var(--text)}
+tbody tr:last-child{border-bottom:none}
+.td-app{font-weight:500;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{display:inline-block;padding:2px 8px;font-size:11px;font-weight:600;letter-spacing:.02em}
+.badge-red   {background:#FDE8E8;color:#9B1C1C}
+.badge-amber {background:#FEF3E2;color:#7B3800}
+.badge-green {background:#E8F5EE;color:#064E24}
+.badge-blue  {background:#E8F0FF;color:#003090}
+.badge-purple{background:#F2E6FF;color:#5500AA}
+.badge-gray  {background:var(--surface2);color:var(--text2)}
+
+/* ── PAGINATION ── */
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:12px 0;font-size:12px;color:var(--text2)}
+.pag-btns{display:flex;gap:6px}
+.pag-btn{
+  background:#fff;border:1px solid var(--border);color:var(--text2);
+  padding:5px 14px;cursor:pointer;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.08em;transition:all .15s;
+}
+.pag-btn:hover:not(:disabled){background:var(--acc-purple);border-color:var(--acc-purple);color:#fff}
+.pag-btn:disabled{opacity:.3;cursor:default}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--surface2)}
+::-webkit-scrollbar-thumb{background:var(--border2)}
+::-webkit-scrollbar-thumb:hover{background:var(--acc-purple)}
+
+/* ── SEARCH ── */
+.search-box{
+  background:#fff;border:1px solid var(--border);color:var(--text);
+  font-family:var(--font);font-size:12px;padding:6px 12px;outline:none;width:200px;
+}
+.search-box:focus{border-color:var(--acc-purple);box-shadow:0 0 0 2px var(--acc-purple-lt)}
+.search-box::placeholder{color:var(--text3)}
+
+/* ── ALERT ── */
+.alert-bar{
+  background:#FEF2F2;border-left:3px solid var(--danger);
+  padding:12px 16px;margin-bottom:24px;font-size:13px;color:#7B1111;
+}
+.alert-bar strong{color:var(--danger);font-weight:700}
+
+/* ── OVERVIEW SECTION TITLES ── */
+.ov-section-title{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--text3);margin:28px 0 12px;padding-bottom:8px;
+  border-bottom:2px solid var(--border);
+}
+
+/* ── SKILLS BREAKUP TAB ── */
+.sk-region-block{margin-bottom:28px}
+.sk-region-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;background:var(--surface2);border:1px solid var(--border);
+  border-bottom:none;flex-wrap:wrap;gap:8px;
+}
+.sk-region-name{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.sk-region-stats{display:flex;align-items:center;gap:0;flex-wrap:wrap;font-size:12px;color:var(--text2)}
+.sk-stat{padding:0 8px}
+.sk-stat-sep{color:var(--border2)}
+.sk-table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--border)}
+.sk-table thead th{background:var(--surface2);color:var(--text2);padding:8px 12px;text-align:left;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.08em;border-bottom:2px solid var(--acc-purple)}
+.sk-table thead th.r,.sk-table tbody td.r{text-align:right}
+#region-summary-table th.r,#region-summary-table td.r{text-align:right}
+#region-summary-table{width:100%;border-collapse:collapse;font-size:13px}
+#region-summary-table thead th{background:var(--surface2);color:var(--text2);padding:10px 12px;text-align:left;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.08em;border-bottom:2px solid var(--acc-purple)}
+#region-summary-table tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+#region-summary-table tbody tr:hover{background:rgba(161,0,255,.08)}
+#region-summary-table tbody td{padding:9px 12px;color:var(--text)}
+.sk-table tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+.sk-table tbody tr:hover{background:rgba(161,0,255,.08)}
+.sk-table tbody td{padding:8px 12px;color:var(--text)}
+.sk-table tbody tr:last-child{border-bottom:none}
+.sk-skill-row:hover{background:rgba(161,0,255,.05) !important;cursor:pointer}
+.sk-expand-icon{transition:transform .2s;user-select:none}
+.sk-app-row td{border-left:none}
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+
+    <!-- Accenture Logo: black bold lowercase + purple > chevron above "t" -->
+    <div class="acc-logo">
+      <svg width="132" height="44" viewBox="0 0 132 44" xmlns="http://www.w3.org/2000/svg" aria-label="Accenture">
+        <!-- Purple > chevron: sits above the right side of the word -->
+        <text x="96" y="14" font-family="Arial Black, Arial, sans-serif" font-size="15" font-weight="900" fill="#A100FF">&gt;</text>
+        <!-- Bold black lowercase wordmark -->
+        <text x="1" y="38" font-family="Arial Black, Arial, sans-serif" font-size="20" font-weight="900" fill="#000000" letter-spacing="-0.5">accenture</text>
+      </svg>
+    </div>
+
+    <!-- QBE Logo: official SVG from QBE website -->
+    <div class="qbe-logo">
+      <svg height="38" viewBox="0 0 1596 462" xmlns="http://www.w3.org/2000/svg" style="width:auto;display:block" aria-label="QBE Insurance">
+        <style>.s0{fill:#282828}.s1{fill:#00aff4}</style>
+        <g>
+          <path fill-rule="evenodd" class="s0" d="m925.4 425.5q-6.8 4.4-13.8 8.4-7.1 3.9-14.4 7.3-7.4 3.4-15 6.2-7.5 2.9-15.3 5.1-7.8 2.4-15.8 4.1-8 1.8-16.1 3-8.1 1.1-16.2 1.7-8.2 0.6-16.4 0.5c-25.8 0-50.6-4.3-74.5-12.4q-8.8-3.2-17.4-7-8.6-3.9-16.8-8.5-8.2-4.6-16-9.8-7.8-5.3-15.1-11.2-10.2-8.1-19.3-17.3-9.1-9.2-17.1-19.5-8-10.2-14.7-21.3-6.8-11.1-12.2-22.9c-14.7-31.6-22-66-22-103.3 0-30.9 5.8-60.3 17.7-87.9 11.7-27.6 28.9-52.9 51.5-75.8q7.7-7.6 16.1-14.5 8.3-6.9 17.3-12.9 9-6 18.6-11.2 9.5-5.1 19.5-9.3c26.2-10.9 54.4-16.2 84.4-16.2 31.1 0 59.7 5.3 86.1 16.2 26.4 11 50.5 27.1 72.4 48.7q8.3 8 15.7 16.9 7.4 8.9 13.8 18.5 6.4 9.6 11.9 19.7 5.4 10.2 9.7 20.9c11.5 28.2 17.2 59 17.2 92.1 0 29.1-4.6 55.8-13.8 80.5-9 24.4-22.9 47.5-41.5 68.7 7.9 3.8 16 6.5 24.2 8.2q3.3 0.7 6.7 1.2 3.3 0.5 6.7 0.9 3.3 0.3 6.7 0.5 3.4 0.1 6.7 0.1h8.2v62h-5.7q-6.4 0-12.7-0.5-6.3-0.5-12.6-1.5-6.3-0.9-12.5-2.3-6.2-1.4-12.3-3.2-6.8-2.1-13.5-4.6-6.6-2.4-13.1-5.3-6.6-2.9-12.9-6.2-6.3-3.2-12.4-6.8zm-8.6-77.2c16-18.3 27.6-36.7 35-55.8 7.3-18.8 10.9-40.5 10.9-64.7q0-7.5-0.7-15-0.7-7.5-2.1-14.9-1.4-7.4-3.5-14.7-2.1-7.2-4.8-14.2-2.8-7.1-6.3-13.9-3.4-6.7-7.5-13.1-4-6.5-8.7-12.5-4.6-6-9.8-11.5c-16.6-18-34.5-31.4-53.6-40-19.1-8.6-40.4-13-63.8-13q-31.3-0.1-59.6 11.9-7 3-13.7 6.7-6.7 3.7-13 8-6.3 4.3-12.2 9.3-5.8 4.9-11.1 10.4-5.9 5.9-11.1 12.4-5.2 6.5-9.8 13.5-4.5 7-8.4 14.4-3.8 7.4-7 15.1-3.1 7.7-5.5 15.7-2.3 8-3.9 16.2-1.6 8.1-2.4 16.4-0.8 8.3-0.8 16.6c0 6.9 0.6 14.4 1.7 22.2 1.1 7.7 2.9 15.6 5 24.1q3.8-1.9 7.7-3.5 4-1.7 8-3.1 4-1.3 8.1-2.4 4.2-1.1 8.3-2c11.8-2.4 25.4-3.4 40.8-3.4 32.9 0 66 7.2 99.3 21.8 33.3 14.7 64.8 35.6 94.5 63zm-48.5 35.9c-22.7-20.7-47-36.7-73-47.5q-39-16.4-79.4-16.4c-7.7 0-15 0.6-22.2 1.7q-2.7 0.4-5.4 1-2.6 0.5-5.3 1.1-2.6 0.7-5.3 1.4-2.6 0.7-5.2 1.6c15.9 22.6 35.2 40.2 58.3 52.6q8.6 4.6 17.6 8.1 9.1 3.5 18.6 5.9 9.4 2.3 19.1 3.5 9.6 1.2 19.4 1.1c9.7 0 19.7-1.1 30-3.5 10.3-2.2 21.2-5.9 32.8-10.6zm297.6-376.3c47.7 0 84 10.4 108.7 31.3 24.9 20.9 37.2 51.5 37.2 91.3 0 18.5-4 34.8-12.2 49.1-8.1 14.1-19.9 25.9-35.5 35 21.9 6.4 39.2 19.1 51.9 37.9 12.6 18.7 19 40.8 19 66.8q0.1 7.6-0.6 15.1-0.8 7.5-2.2 14.9-1.5 7.4-3.7 14.7-2.3 7.2-5.2 14.2c-7.8 18.3-18.4 33.5-32.2 45.5q-5 4.2-10.4 8-5.4 3.7-11.2 6.8-5.8 3.1-11.8 5.6-6.1 2.5-12.4 4.4c-17.2 4.8-41.3 7.2-72.3 7.2h-103.2v-447.8c0 0 96.1 0 96.1 0zm-32.6 387.2h51c29.8 0 51.9-5.5 65.9-16.8 14.1-11.1 21.2-28.3 21.2-51.7 0-25.5-7.3-44.8-22.1-57.8-14.7-13.1-36.3-19.8-65-19.8h-51zm0.6-199.6h20.6c33.5 0 57.3-5.2 71.6-15.2 14.2-10.3 21.3-27 21.3-50.5 0-20.6-6.4-36-19.4-46.1-12.9-10-32.7-15-59.3-15h-34.8zm461.2 260.1h-232v-447.8h232v59.9h-167.2v133.8h167.2v58h-167.2v134.3h167.2z"/>
+          <path fill-rule="evenodd" class="s1" d="m375.2 335.9q4.8 0 9.4-1 4.7-0.9 9.1-2.7 4.4-1.9 8.4-4.5 3.9-2.7 7.3-6c8.8-8.9 14.2-21 14.2-34.5q0-3.2-0.4-6.5-0.4-3.2-1.3-6.4-0.9-3.1-2.2-6.1-1.3-3-3-5.8l-99.6-173.4c-1.2-8-3.3-16-6.2-23.6-2.8-7.7-6.5-15-10.9-21.9-4.4-6.8-9.5-13.2-15.3-19.1-5.7-5.8-12.1-10.9-18.9-15.4 10-1.9 20.4-2.3 30.5-1 10.2 1.2 20.1 4 29.5 8.3 9.3 4.3 17.9 10 25.4 16.9 7.6 6.9 14.1 14.9 19.2 23.8l102 177c6.5 11.3 10.7 23.8 12.5 36.8 1.7 12.9 0.8 26.1-2.6 38.7-3.4 12.7-9.2 24.5-17.1 34.9-8 10.4-17.9 19.1-29.2 25.6-11.1 6.5-23.4 10.7-36.1 12.4-12.7 1.8-25.6 1.1-38-2.1-12.5-3.1-24.1-8.7-34.5-16.3-10.3-7.6-19-17.2-25.7-28.1zm11.7-77.5c3.8 1.5 7.2 3.9 10.1 6.8 2.9 2.9 5.2 6.3 6.7 10.1 1.6 3.8 2.4 7.8 2.4 11.9 0 4.1-0.8 8.2-2.4 12-1.5 3.7-3.8 7.2-6.7 10.1-2.9 2.9-6.3 5.1-10.1 6.7-3.8 1.6-7.9 2.4-12 2.4h-160.3l35.9-62.5h124.4c4.1 0.1 8.2 0.9 12 2.5zm-134.7-168.2q-2.4-4.1-5.5-7.7-3.1-3.6-6.9-6.5-3.8-2.8-8.1-4.9-4.3-2.1-8.9-3.3-4.6-1.3-9.4-1.6-4.8-0.3-9.5 0.3-4.8 0.6-9.3 2.2-4.6 1.5-8.7 3.9c-7.8 4.7-14 11-18.2 18.3l-99.7 173.3c-6.4 5.1-12.2 10.9-17.4 17.2-5.2 6.3-9.7 13.2-13.5 20.4-3.7 7.3-6.7 14.9-8.9 22.8-2.1 7.9-3.5 16-3.9 24.1-6.7-7.7-12.2-16.5-16.2-26-4-9.4-6.5-19.4-7.5-29.6-0.9-10.2-0.3-20.5 1.9-30.6 2.2-10 5.9-19.6 11-28.5l102.1-177c6.5-11.3 15.1-21.3 25.4-29.3 10.4-7.9 22.2-13.8 34.8-17.2 12.6-3.4 25.8-4.2 38.7-2.5 13 1.7 25.5 6 36.8 12.5 46.6 27 63.2 86.3 37.6 133.5 0 0-36.7-63.8-36.7-63.8zm-72.8 28.8c-0.6-4.1-0.3-8.2 0.7-12.2 1.1-3.9 2.9-7.6 5.4-10.8 2.5-3.3 5.6-6 9.1-8.1 3.6-2 7.5-3.4 11.5-3.9 4.1-0.6 8.2-0.3 12.2 0.7 3.9 1.1 7.7 2.9 10.9 5.4 3.2 2.5 6 5.6 8 9.2l80.2 139.1h-71.9l-62.2-108c-2.1-3.5-3.4-7.4-3.9-11.4zm-78 200.9q-2.4 4.1-3.9 8.6-1.5 4.6-2.1 9.3-0.6 4.8-0.3 9.5 0.3 4.8 1.5 9.4 1.3 4.6 3.4 8.9 2.1 4.3 5.1 8.1 2.9 3.8 6.5 7 3.6 3.1 7.7 5.5c7.9 4.5 16.5 6.7 25 6.5h199.5c7.6 3 15.4 5.2 23.5 6.5 8.1 1.4 16.3 1.9 24.4 1.5 8.2-0.3 16.3-1.5 24.2-3.6 7.9-2 15.6-4.9 22.9-8.6-13.6 38.8-50.5 66.8-93.8 66.8h-204.1c-54.8 0-99.3-44.7-99.3-99.7 0-54 43-97.9 96.6-99.6zm61.2 49c-3.3 2.5-7 4.3-10.9 5.3-4 1.1-8.1 1.4-12.1 0.8-4.1-0.5-8-1.8-11.5-3.8-3.5-2.1-6.7-4.8-9.2-8.1-2.4-3.2-4.3-6.9-5.3-10.9-1.1-4-1.4-8.1-0.8-12.2 0.5-4 1.8-7.9 3.9-11.5l80.2-139.2 36 62.4-62.3 108.1c-2.1 3.5-4.8 6.6-8 9.1z"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="header-title">
+      <h1>ITO Apps Transition — Staffing Dashboard</h1>
+      <p>Panama = N &nbsp;·&nbsp; 191 apps &nbsp;·&nbsp; Refreshed 16 May 2026 &nbsp;·&nbsp; All waves assigned</p>
+    </div>
+  </div>
+</div>
+
+<div class="filters">
+  <div class="filter-group"><label>Region</label>
+    <select id="f-region"><option value="">All Regions</option></select>
+  </div>
+  <div class="filter-group"><label>Wave</label>
+    <select id="f-wave"><option value="">All Waves</option></select>
+  </div>
+  <div class="filter-group"><label>Tower</label>
+    <select id="f-tower"><option value="">All Towers</option></select>
+  </div>
+  <div class="filter-group"><label>Staffing</label>
+    <select id="f-status">
+      <option value="">All</option>
+      <option value="gap">Has Staffing Gap</option>
+      <option value="covered">Fully Covered</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <input class="search-box" id="search" placeholder="Search app name…" type="text">
+  </div>
+  <button class="btn-reset" onclick="resetFilters()">Reset</button>
+  <span class="results-count" id="results-count"></span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('overview')">Overview</div>
+  <div class="tab" onclick="switchTab('apps')">App Inventory</div>
+  <div class="tab" onclick="switchTab('skills')">Skills Breakup</div>
+</div>
+
+<div class="main">
+
+  <!-- OVERVIEW TAB -->
+  <div class="tab-panel active" id="tab-overview">
+    <div class="alert-bar" id="alert-bar"><strong>⚠ Critical:</strong> Wave 1 staff ready deadline is <strong>3 Sep 2026 — 111 days away</strong> with 74 FTEs unmet across 44 apps. Only 9% of total required FTEs are identified.</div>
+
+    <div class="metrics" id="metrics-row"></div>
+
+    <!-- REGION SUMMARY TABLE -->
+    <div class="ov-section-title">Staffing Summary by Region</div>
+    <div class="table-wrap" style="margin-bottom:28px">
+      <table id="region-summary-table">
+        <thead>
+          <tr>
+            <th>Region</th>
+            <th class="r">Apps</th>
+            <th class="r">FTEs Required</th>
+            <th class="r">Identified</th>
+            <th class="r">To Staff</th>
+            <th class="r">Gap %</th>
+            <th style="width:160px">Coverage</th>
+          </tr>
+        </thead>
+        <tbody id="region-summary-body"></tbody>
+      </table>
+    </div>
+
+    <!-- WAVE DEADLINES SECTION -->
+    <div class="ov-section-title">Staffing Fulfilment Deadlines — By Transition Wave</div>
+    <div class="waves" id="wave-cards"></div>
+
+  </div>
+
+  <!-- APP INVENTORY TAB -->
+  <div class="tab-panel" id="tab-apps">
+    <div class="table-wrap" id="table-wrap">
+      <table id="app-table">
+        <thead>
+          <tr>
+            <th onclick="sortTable('app')">Application <span class="sort-arrow" id="sort-app">↕</span></th>
+            <th onclick="sortTable('region')">Region <span class="sort-arrow" id="sort-region">↕</span></th>
+            <th onclick="sortTable('tower')">Tower <span class="sort-arrow" id="sort-tower">↕</span></th>
+            <th onclick="sortTable('wave')">Wave <span class="sort-arrow" id="sort-wave">↕</span></th>
+            <th onclick="sortTable('ready_by')">Ready By <span class="sort-arrow" id="sort-ready_by">↕</span></th>
+            <th onclick="sortTable('days_left')">Days Left <span class="sort-arrow" id="sort-days_left">↕</span></th>
+            <th onclick="sortTable('ftes')">FTEs <span class="sort-arrow" id="sort-ftes">↕</span></th>
+            <th onclick="sortTable('identified')">Identified <span class="sort-arrow" id="sort-identified">↕</span></th>
+            <th onclick="sortTable('to_staff')">To Staff <span class="sort-arrow" id="sort-to_staff">↕</span></th>
+            <th onclick="sortTable('kc_remarks')">Approach <span class="sort-arrow" id="sort-kc_remarks">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="app-tbody"></tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <span id="pag-info"></span>
+      <div class="pag-btns">
+        <button class="pag-btn" id="btn-prev" onclick="prevPage()">← Prev</button>
+        <button class="pag-btn" id="btn-next" onclick="nextPage()">Next →</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const RAW = [{"app": ".NET Integration - NA", "tower": "Integration", "region": "NAO", "skill": ".Net", "ftes": 1.0, "identified": 1.0, "to_staff": 0.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "Repurpose existing team"}, {"app": ".NET Integration - ODEN PT Sentry", "tower": "Integration", "region": "NAO", "skill": ".Net", "ftes": 1.0, "identified": 1.0, "to_staff": 0.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "Repurpose existing team"}, {"app": "A&H AI UW Assistant-NA", "tower": "Bespoke Apps", "region": "NAO", "skill": "Reactjs, .net", "ftes": 2.0, "identified": 2.0, "to_staff": 0.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "Repurpose existing team"}, {"app": "Precisely Spectrum-NA", "tower": "Bespoke Apps", "region": "NAO", "skill": "Decomm'd", "ftes": 0.2, "identified": 0.2, "to_staff": 0.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "Decomm'd"}, {"app": "OKTA-NA", "tower": "Bespoke Apps", "region": "NAO", "skill": "Service used for XM, WINS - Kiran", "ftes": 0.2, "identified": 0.2, "to_staff": 0.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "Repurpose existing team"}, {"app": "Azure-APIM-NA", "tower": "Integration", "region": "NAO", "skill": "Azure APIM, LogicApps, .Net", "ftes": 2.2, "identified": 2.2, "to_staff": 0.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "Repurpose existing team"}, {"app": "Data Insights-Azure-NA", "tower": "Data Engineering", "region": "NAO", "skill": "ADF, ADB", "ftes": 6.0, "identified": 4.0, "to_staff": 2.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "Partially identified"}, {"app": "Master Data Management – Tibco-NAO (Tibco-EBX-NA, COTS)", "tower": "Data Engineering", "region": "NAO", "skill": "Java, IBM WebSphere", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "QSTAT", "tower": "Data Engineering", "region": "NAO", "skill": "MS SQL Management Studio", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Pricing-Web-Tool-NA", "tower": "Data Engineering", "region": "NAO", "skill": ".Net", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "QSAS-NA", "tower": "Data Engineering", "region": "NAO", "skill": "SAS", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Federato Risk Ops Underwriting Workbench-NA", "tower": "Federato", "region": "NAO", "skill": "APIM, .Net, Python", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Claims Data Access", "tower": "Guidewire", "region": "NAO", "skill": "AWS", "ftes": 1.0, "identified": 1.0, "to_staff": 0.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "GuideWire Customer Engage Portal", "tower": "Guidewire", "region": "NAO", "skill": "Reactjs", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Loss Control 360", "tower": "Guidewire", "region": "NAO", "skill": "Service for Majesco", "ftes": 1.0, "identified": 1.0, "to_staff": 0.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Q-QBE-Billing-NA", "tower": "Majesco", "region": "NAO", "skill": "Majesco", "ftes": 6.0, "identified": 0.0, "to_staff": 6.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Q-QBE-Policy Administration System-NA", "tower": "Majesco", "region": "NAO", "skill": "Majesco DevStudio, SQL Developer", "ftes": 7.0, "identified": 0.0, "to_staff": 7.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Q-QBE-Portal-NA", "tower": "Majesco", "region": "NAO", "skill": "Java Full Stack", "ftes": 6.0, "identified": 0.0, "to_staff": 6.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Case Management-EO", "tower": "Pega", "region": "EO", "skill": "Pega, SQL", "ftes": 6.0, "identified": 0.0, "to_staff": 6.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Datahub-EO", "tower": "Data Engineering", "region": "EO", "skill": "ADF, ADB, SQL, PBI, Synapse, DevOps", "ftes": 6.0, "identified": 0.0, "to_staff": 6.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "EWF-Pega-EO", "tower": "Pega", "region": "EO", "skill": "Pega, SQL", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "GDPR Structured Data -Rule Engine-EO", "tower": "Data Engineering", "region": "EO", "skill": "ADF, ADB, SQL, DevOps", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "GDPR-ArchiveAndControl-EO", "tower": "Data Engineering", "region": "EO", "skill": "ADF, ADB, SQL, DevOps", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "I&E Store-EO", "tower": "Bespoke Apps", "region": "EO", "skill": "SQL (MSSS)", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Look Up Data Store", "tower": "Data Engineering", "region": "EO", "skill": "SQL (MSSS)", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "North Star Console-EO", "tower": "Bespoke Apps", "region": "EO", "skill": "Reactjs, Cosmos DB, SQL, AKS (Infra)", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Pega Claims Intake Processor-EO", "tower": "Pega", "region": "EO", "skill": "Pega, SQL", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "PEGA e-Procurement tracker-EO", "tower": "Pega", "region": "EO", "skill": "Pega, SQL", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "QBE Work Orchestration-EO", "tower": "Pega", "region": "EO", "skill": "Pega, SQL", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Robotics Process Automation Application-EO", "tower": "Pega", "region": "EO", "skill": "Pega, SQL", "ftes": 3.0, "identified": 0.0, "to_staff": 3.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Actuarial–Modelling Server-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "SAS, Python, VBA, SQL Server, Windows Server", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "Ambiental Flood Map-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "External Portal", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "Azure-APIM-Gateway-AO", "tower": "Integration", "region": "AUSPAC", "skill": "Azure APIM, LogicApps", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "Claim coding tool", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "Claims-Call-Summarizer-SPA-AO", "tower": "Digital", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Debtors reporting database - DRD", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "Emblem XE-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "EmployeeAllocationTool-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "Google Analytics-AO", "tower": "Digital", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "LMI Microservices", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "NZ Broker Exchange-AO", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "NZ ZIP-AO", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "PropertyTriageTool-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "QBE NZ Reporting-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "Qbot", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "QDash-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "RadarBase-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "SAS-Actuarial-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "SmartUnderwritingLiability-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "SupplierAllocationTool-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "IBM DataStage", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.2, "identified": 2.2, "to_staff": 0.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "Already supported"}, {"app": "LMI Analytics Database-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "LMI NAB Batch Processing-AO", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "LMI RMBS-AO", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "PowerWise-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "AUSPAC Property Lodgement SPA", "tower": "Digital", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.1, "identified": 1.1, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "Already supported"}, {"app": "DebtNet-AO", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "Direct Application (QAS)-AO", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "DSS Portal", "tower": "Digital", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Omni-AO", "tower": "Digital", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.5, "to_staff": 0.5, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "Already supported"}, {"app": "QBE Market-AO", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "Repairer Finder Tool-AO", "tower": "Digital", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 0.3, "identified": 0.3, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "Already supported"}, {"app": "CC Emailer-AO", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 1.0, "to_staff": 0.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "Already supported"}, {"app": "Digital Claim Lodgement - PI&L and A&H Claims-AO", "tower": "Digital", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.1, "identified": 1.1, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "Already supported"}, {"app": "LMI Claims-AO", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "Redis-AO", "tower": "Digital", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Strategic Batchloader", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 0.4, "identified": 0.4, "to_staff": 0.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "Decomm path"}, {"app": "Azure Functions-AO", "tower": "Integration", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "Azure-APIM-Portal-AO", "tower": "Integration", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "Integration-Azure-APIM-Internal-Gateway-AO", "tower": "Integration", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "LMI Mobile Web Services-AO", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "Mulesoft-RTF Platform-AO", "tower": "Integration", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "Process Engine-AO", "tower": "Integration", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.9, "to_staff": 0.1, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "Already supported"}, {"app": "QBEnch-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "Springboot Microservices-AO", "tower": "Integration", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "Springboot Platform-AO", "tower": "Integration", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "MSPowerAutomate-AO", "tower": "Pega", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Pega Deployment Manager-AO", "tower": "Pega", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Commercial Lines Underwriting Workbench-AO", "tower": "Pega", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Inbound Document Management-AO", "tower": "Pega", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "OneFLow NZPAC-AO", "tower": "Pega", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "NZ Claims-AO", "tower": "Pega", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "EBA Workbench-AO", "tower": "Pega", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Pricing-RDG-AO", "tower": "Pega", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "GWDP - Data Lake House-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "QSIGHT - Data Lake House-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "QSIGHT - Data Applications-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "CDA-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "QSIGHT - Advanced Analytics-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "QSIGHT - AI & Cognitive-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "QSIGHT - BI & Reporting-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "QSIGHT - Data Products", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "QSIGHT - Downstream Integration-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "QSIGHT - Operational Data-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "QSIGHT - Streaming Analytics-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "QSIGHT - User Labs-AO", "tower": "Data Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "Payment Micro Frontend- AO", "tower": "Digital", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Jutro-Brokers-SPA-AO", "tower": "Digital", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Jutro-Claims-SPA-AO", "tower": "Digital", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Jutro-Portal-AO", "tower": "Digital", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Confluent-AO", "tower": "Integration", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "LMI Matching Engine-AO", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "LMI NAB eBusiness-AO", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "LMI NAB Phoenix-AO", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "LMI REINS-AO", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "LMI Search Index Server", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "lmiCONNECT Android", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "lmiCONNECT Batch Origination", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "lmiCONNECT HK", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "lmiCONNECT IOS", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "Artifactory Cloud - AUSPAC\APAC", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Artifactory Cloud - Global", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Artifactory OnPrem-AO", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Azure DevOps", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "DevHub", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Fortify On Demand", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Figma", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Fortify Static Code Analysis", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Fortify WebInspect", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Genesys Cloud AO", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Genesys Cloud EU", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "GitHub Enterprise - Copilot", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Office 365–Sharepoint Online", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Office365-One Drive", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Office365-Power Apps", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Office365-Power BI", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Sitecore XM Cloud", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "SonarQube", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Tricentis TOSCA-AO", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Tricentis TOSCA-EO", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Tricentis TOSCA-NA", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Computershare (CCS)", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Risk Link (Hosting Plus)", "tower": "Global Platforms - Reinsurance & Cat Modeling", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Risk Modeler (Risk Intelligence Platform)", "tower": "Global Platforms - Reinsurance & Cat Modeling", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Arium", "tower": "Global Platforms - Reinsurance & Cat Modeling", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Cyence Cyber Risk", "tower": "Global Platforms - Reinsurance & Cat Modeling", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 1.0, "identified": 0.0, "to_staff": 1.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Eigen Prism (contracting in progress)", "tower": "Global Platforms - Reinsurance & Cat Modeling", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Duck Creek Reinsurance (DCR)", "tower": "Global Platforms - Reinsurance & Cat Modeling", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 4.0, "identified": 0.0, "to_staff": 4.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Rose", "tower": "Global Platforms - Reinsurance & Cat Modeling", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 2.0, "identified": 0.0, "to_staff": 2.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Ping Intel (contracting in progress)", "tower": "Global Platforms - Reinsurance & Cat Modeling", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.0, "identified": 0.0, "to_staff": 0.0, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Cyber AI-NA", "tower": "AI Engineering", "region": "NAO", "skill": "UI/UX or Web Application", "ftes": 0.9, "identified": 0.0, "to_staff": 0.9, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Data_Science-NA", "tower": "Data Engineering", "region": "NAO", "skill": "UI/UX or Web Application", "ftes": 1.7, "identified": 0.0, "to_staff": 1.7, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "eFNOL [Qnect Claims: React]-Asia", "tower": "Guidewire", "region": "ASIA", "skill": "UI/UX or Web Application", "ftes": 0.9, "identified": 0.0, "to_staff": 0.9, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Pega Accident & Health RAMP-NA", "tower": "Pega", "region": "NAO", "skill": "UI/UX or Web Application", "ftes": 1.1, "identified": 0.0, "to_staff": 1.1, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Service Desk Console", "tower": "Cloud Engineering", "region": "EO", "skill": "UI/UX or Web Application", "ftes": 0.9, "identified": 0.0, "to_staff": 0.9, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "Operational status in \"Retired\" in SNOW"}, {"app": "SmartQ Claims - Pega-Asia", "tower": "Pega", "region": "ASIA", "skill": "UI/UX or Web Application", "ftes": 1.1, "identified": 0.0, "to_staff": 1.1, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "Underwriting Workbench - Pega-Asia", "tower": "Pega", "region": "ASIA", "skill": "UI/UX or Web Application", "ftes": 2.2, "identified": 0.0, "to_staff": 2.2, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "Qnect B2B-Asia", "tower": "Digital", "region": "ASIA", "skill": "UI/UX or Web Application", "ftes": 0.3, "identified": 0.0, "to_staff": 0.3, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "Qnect B2C [Qnect Microservice]-Asia", "tower": "Digital", "region": "ASIA", "skill": "UI/UX or Web Application", "ftes": 0.3, "identified": 0.0, "to_staff": 0.3, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "Asia Finance Workbench", "tower": "Pega", "region": "ASIA", "skill": "UI/UX or Web Application", "ftes": 0.9, "identified": 0.0, "to_staff": 0.9, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "A&H Payment Portal External-NA", "tower": "Digital", "region": "NAO", "skill": "UI/UX or Web Application", "ftes": 0.3, "identified": 0.0, "to_staff": 0.3, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Media Liability Influencer Certification-NA", "tower": "Digital", "region": "NAO", "skill": "UI/UX or Web Application", "ftes": 0.4, "identified": 0.0, "to_staff": 0.4, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Sketch", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.3, "identified": 0.0, "to_staff": 0.3, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "Chromatic", "tower": "Digital", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.3, "identified": 0.0, "to_staff": 0.3, "wave": "Wave 2 (Jan 2027)", "ready_by": "4 Dec 2026", "days_left": 202, "kc_remarks": "New onboard"}, {"app": "CA Test Data Manager-NA", "tower": "Pega", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.3, "identified": 0.0, "to_staff": 0.3, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "CA Test Data Manager-EO", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.3, "identified": 0.0, "to_staff": 0.3, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "CA Test Data Manager-AO", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.3, "identified": 0.0, "to_staff": 0.3, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "Cyber AI-EO", "tower": "AI Engineering", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.9, "identified": 0.0, "to_staff": 0.9, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Brolli-AO-Prod", "tower": "Salesforce", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 0.9, "identified": 0.0, "to_staff": 0.9, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Gen AI-AUSPAC", "tower": "AI Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 1.1, "identified": 0.0, "to_staff": 1.1, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Gen AI AUSPAC - Claims VoC Call Summariser", "tower": "AI Engineering", "region": "AUSPAC", "skill": "UI/UX or Web Application", "ftes": 0.9, "identified": 0.0, "to_staff": 0.9, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "Office 365–PowerApps", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.4, "identified": 0.0, "to_staff": 0.4, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "Workfront-NA", "tower": "Bespoke Apps", "region": "NAO", "skill": "UI/UX or Web Application", "ftes": 0.2, "identified": 0.0, "to_staff": 0.2, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "PowerBI-Gateway-AO", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.3, "identified": 0.0, "to_staff": 0.3, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "PowerBI-Gateway-NA", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.3, "identified": 0.0, "to_staff": 0.3, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "PowerBI-Gateway-EO", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.3, "identified": 0.0, "to_staff": 0.3, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "NUIX-AO", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.4, "identified": 0.0, "to_staff": 0.4, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "RUM (Remote User Management)", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.3, "identified": 0.0, "to_staff": 0.3, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "GDSi WS Toolkit", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.7, "identified": 0.0, "to_staff": 0.7, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "iManage Share", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.3, "identified": 0.0, "to_staff": 0.3, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "Already supported"}, {"app": "iManage Drive", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.3, "identified": 0.0, "to_staff": 0.3, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "Already supported"}, {"app": "Authority@QBE", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.3, "identified": 0.0, "to_staff": 0.3, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "Already supported"}, {"app": "Microsoft Azure", "tower": "Integration", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 2.2, "identified": 0.0, "to_staff": 2.2, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "Process Change Management-GSSC", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.4, "identified": 0.0, "to_staff": 0.4, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "QBE GSSC PayBen Portal (QGPP)-GSSC", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.4, "identified": 0.0, "to_staff": 0.4, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "Already supported"}, {"app": "eLRS-GSSC", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.7, "identified": 0.0, "to_staff": 0.7, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "GSSC Incident Portal (GIP)-GSSC", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.4, "identified": 0.0, "to_staff": 0.4, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "GSSC Finance System (GFS)-GSSC", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 1.1, "identified": 0.0, "to_staff": 1.1, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "GSSC Data and Reporting (GDAR)-GSSC", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.4, "identified": 0.0, "to_staff": 0.4, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "Online Fleet System (OFS)-GSSC", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "UI/UX or Web Application", "ftes": 0.4, "identified": 0.0, "to_staff": 0.4, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "CA Tracker-GSSC", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "Power Apps", "ftes": 0.3, "identified": 0.0, "to_staff": 0.3, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "CA Validation Tool-GSSC", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "Power Apps", "ftes": 0.3, "identified": 0.0, "to_staff": 0.3, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "All Star Nomination Form-GSSC", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "Windows Power App", "ftes": 0.3, "identified": 0.0, "to_staff": 0.3, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "OMA-GSSC", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "Windows Power App", "ftes": 0.4, "identified": 0.0, "to_staff": 0.4, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "PIA-GSSC", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "Windows Power App", "ftes": 0.4, "identified": 0.0, "to_staff": 0.4, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "RMSA App Pro", "tower": "Bespoke Apps", "region": "GPLAT", "skill": "Skill Unknown", "ftes": 0.4, "identified": 0.0, "to_staff": 0.4, "wave": "Wave 4 (Jul 2027)", "ready_by": "3 Jun 2027", "days_left": 383, "kc_remarks": "New onboard"}, {"app": "Circa-AO", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "Skill Unknown", "ftes": 0.4, "identified": 0.0, "to_staff": 0.4, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "Earnix Price It", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "SaaS Platform", "ftes": 0.4, "identified": 0.0, "to_staff": 0.4, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "Hail AUS", "tower": "Global Reinsurance", "region": "GPLAT", "skill": "Skill Unknown", "ftes": 0.4, "identified": 0.0, "to_staff": 0.4, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}, {"app": "LMI Intuition", "tower": "Bespoke Apps", "region": "AUSPAC", "skill": "Skill Unknown", "ftes": 0.4, "identified": 0.0, "to_staff": 0.4, "wave": "Wave 3 (Apr 2027)", "ready_by": "4 Mar 2027", "days_left": 292, "kc_remarks": "New onboard"}, {"app": "Temblor", "tower": "Global Reinsurance", "region": "GPLAT", "skill": "Skill Unknown", "ftes": 0.4, "identified": 0.0, "to_staff": 0.4, "wave": "Wave 1 (Oct 2026)", "ready_by": "3 Sep 2026", "days_left": 110, "kc_remarks": "New onboard"}];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let filtered = [...RAW];
+let sortKey = 'days_left', sortDir = 1;
+let page = 1;
+const PAGE_SIZE = 25;
+let charts = {};
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+const r = (n,d=0) => Math.round(n*(10**d))/(10**d);
+const sum = (arr, k) => arr.reduce((a,x) => a + (x[k]||0), 0);
+const uniq = (arr, k) => [...new Set(arr.map(x=>x[k]).filter(Boolean))].sort();
+const urgencyClass = d => d <= 150 ? 'critical' : d <= 300 ? 'high' : 'ok';
+const urgencyLabel = d => d <= 150 ? '🔴 Critical' : d <= 300 ? '🟡 High' : '🟢 Monitor';
+const waveColor = w => ({'Wave 1 (Oct 2026)':'#D90000','Wave 2 (Jan 2027)':'#FF6600','Wave 3 (Apr 2027)':'#CC8800','Wave 4 (Jul 2027)':'#7800CC','Wave 5 (Jan 2028)':'#007A33'}[w]||'#6E6E6E');
+
+// ── DATA LABELS PLUGIN ────────────────────────────────────────────────────────
+// Draws labels outside bars (above vertical, right of horizontal) and on line points
+// Skips zero values and applies smart nudge to avoid axis/edge clipping
+const dataLabelsPlugin = {
+  id: 'customDataLabels',
+  afterDatasetsDraw(chart) {
+    const ctx = chart.ctx;
+    const type = chart.config.type;
+    if (type === 'doughnut' || type === 'pie') {
+      // For doughnut/pie: draw percentage labels on each slice with leader lines
+      const ds = chart.data.datasets[0];
+      const total = ds.data.reduce((a,b) => a+b, 0);
+      const meta = chart.getDatasetMeta(0);
+      meta.data.forEach((arc, i) => {
+        const val = ds.data[i];
+        if (!val || val === 0) return;
+        const pct = Math.round(val / total * 100);
+        if (pct < 3) return; // skip tiny slices
+        const angle = (arc.startAngle + arc.endAngle) / 2;
+        const outerR = arc.outerRadius;
+        // Position label just outside the arc
+        const labelR = outerR + 18;
+        const lx = arc.x + Math.cos(angle) * labelR;
+        const ly = arc.y + Math.sin(angle) * labelR;
+        ctx.save();
+        ctx.font = 'bold 11px Inter, sans-serif';
+        ctx.fillStyle = '#1A1A1A';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${val} (${pct}%)`, lx, ly);
+        ctx.restore();
+      });
+      return;
+    }
+
+    chart.data.datasets.forEach((ds, di) => {
+      const meta = chart.getDatasetMeta(di);
+      if (meta.hidden) return;
+      const isHoriz = chart.config.options?.indexAxis === 'y';
+      const isLine  = type === 'line';
+      const isStacked = chart.config.options?.scales?.x?.stacked || chart.config.options?.scales?.y?.stacked;
+
+      meta.data.forEach((el, i) => {
+        const val = ds.data[i];
+        if (val === undefined || val === null || val === 0) return;
+
+        const label = Number.isInteger(val) ? val : r(val, 1);
+        ctx.save();
+        ctx.font = 'bold 11px Inter, sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+
+        if (isLine) {
+          // Line chart: label above each point
+          const x = el.x;
+          const y = el.y - 14;
+          ctx.fillStyle = '#1A1A1A';
+          // white background pill for readability
+          const tw = ctx.measureText(label).width + 8;
+          ctx.fillStyle = 'rgba(255,255,255,0.85)';
+          ctx.fillRect(x - tw/2, y - 8, tw, 16);
+          ctx.fillStyle = '#1A1A1A';
+          ctx.fillText(label, x, y);
+        } else if (isHoriz) {
+          // Horizontal bar: label to the right of bar end
+          const x = el.x + 7;
+          const y = el.y;
+          ctx.textAlign = 'left';
+          ctx.fillStyle = '#1A1A1A';
+          // If bar is very short, label might overlap axis — skip if too close to 0
+          if (el.x - el.base < 6) { ctx.restore(); return; }
+          ctx.fillText(label, x, y);
+        } else if (isStacked) {
+          // Stacked vertical: label inside bar if tall enough, else skip
+          const barH = Math.abs(el.base - el.y);
+          if (barH < 18) { ctx.restore(); return; }
+          const x = el.x;
+          const y = el.y + barH / 2;
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillText(label, x, y);
+        } else {
+          // Regular vertical bar: label above bar
+          const x = el.x;
+          const y = el.y - 8;
+          ctx.fillStyle = '#1A1A1A';
+          // Don't draw if too close to top edge
+          if (y < chart.chartArea.top + 4) { ctx.restore(); return; }
+          ctx.fillText(label, x, y);
+        }
+        ctx.restore();
+      });
+    });
+  }
+};
+
+// Register plugin globally so all charts use it
+Chart.register(dataLabelsPlugin);
+
+const CHART_OPTS = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{legend:{display:false}, tooltip:{callbacks:{}}},
+  layout:{padding:{top:22, right:28, bottom:4, left:4}},
+  scales:{
+    x:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#8A8A8A',font:{size:11}}},
+    y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#8A8A8A',font:{size:11}}}
+  }
+};
+function makeChart(id, type, data, opts={}) {
+  const ctx = document.getElementById(id);
+  if(!ctx) return;
+  if(charts[id]) charts[id].destroy();
+  // Deep merge layout padding for horizontal charts
+  const mergedOpts = JSON.parse(JSON.stringify({...CHART_OPTS}));
+  if (opts.indexAxis === 'y') {
+    mergedOpts.layout = {padding:{top:4, right:44, bottom:4, left:4}};
+  }
+  charts[id] = new Chart(ctx, {type, data, options:{...mergedOpts,...opts}});
+  return charts[id];
+}
+
+// ── FILTERS INIT ──────────────────────────────────────────────────────────────
+function initFilters() {
+  const populate = (id, vals) => {
+    const s = document.getElementById(id);
+    vals.forEach(v => { const o=document.createElement('option'); o.value=o.textContent=v; s.appendChild(o); });
+  };
+  populate('f-region', uniq(RAW,'region'));
+  populate('f-wave', uniq(RAW,'wave'));
+  populate('f-tower', uniq(RAW,'tower'));
+  ['f-region','f-wave','f-tower','f-status'].forEach(id => document.getElementById(id).addEventListener('change', applyFilters));
+  document.getElementById('search').addEventListener('input', applyFilters);
+}
+
+function applyFilters() {
+  const region = document.getElementById('f-region').value;
+  const wave   = document.getElementById('f-wave').value;
+  const tower  = document.getElementById('f-tower').value;
+  const status = document.getElementById('f-status').value;
+  const q      = document.getElementById('search').value.toLowerCase();
+  filtered = RAW.filter(r => {
+    if(region && r.region !== region) return false;
+    if(wave   && r.wave   !== wave)   return false;
+    if(tower  && r.tower  !== tower)  return false;
+    if(status === 'gap'     && r.to_staff <= 0) return false;
+    if(status === 'covered' && r.to_staff > 0)  return false;
+    if(q && !r.app.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  page = 1;
+  document.getElementById('results-count').textContent = `${filtered.length} apps`;
+  renderAll();
+}
+
+function resetFilters() {
+  ['f-region','f-wave','f-tower','f-status'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('search').value = '';
+  applyFilters();
+}
+
+// ── METRICS ───────────────────────────────────────────────────────────────────
+function renderMetrics() {
+  const totalApps  = filtered.length;
+  const totalFTEs  = Math.round(sum(filtered,'ftes'));
+  const totalID    = Math.round(sum(filtered,'identified'));
+  const totalStaff = Math.round(sum(filtered,'to_staff'));
+  const pctID = totalFTEs > 0 ? Math.round(totalID/totalFTEs*100) : 0;
+  const unknown = filtered.filter(x => x.skill.toLowerCase().includes('unknown')).length;
+  const html = [
+    {v:totalApps,  l:'Total Apps',       s:'in filtered view',        cls:'accent'},
+    {v:totalFTEs,  l:'FTEs Required',    s:'identified + to onboard', cls:''},
+    {v:totalID,    l:'Identified',        s:`${pctID}% of FTEs`,       cls:'ok'},
+    {v:totalStaff, l:'To Be Onboarded',  s:'staffing gap',             cls:'danger'},
+    {v:unknown,    l:'Skill Unknown',    s:'need classification',      cls: unknown>0?'warn':'ok'},
+  ].map(m => `<div class="metric ${m.cls}"><div class="metric-value">${m.v}</div><div class="metric-label">${m.l}</div><div class="metric-sub">${m.s}</div></div>`).join('');
+  document.getElementById('metrics-row').innerHTML = html;
+}
+
+// ── CHARTS ────────────────────────────────────────────────────────────────────
+function renderOverviewCharts() {
+  // Region chart
+  const regions = uniq(filtered,'region');
+  makeChart('chart-region','bar',{
+    labels:regions,
+    datasets:[
+      {label:'FTEs Required',data:regions.map(r=>r_(r,'ftes')),backgroundColor:'#0047BB',borderRadius:0},
+      {label:'Identified',data:regions.map(r=>r_(r,'identified')),backgroundColor:'#00C566',borderRadius:0},
+      {label:'To Staff',data:regions.map(r=>r_(r,'to_staff')),backgroundColor:'#A100FF',borderRadius:0},
+    ]
+  },{plugins:{legend:{display:true,labels:{color:'#4A4A4A',font:{size:11},boxWidth:12}}},...BAR_LABEL_OPTS});
+
+  // Wave bar
+  const waves = ['Wave 1 (Oct 2026)','Wave 2 (Jan 2027)','Wave 3 (Apr 2027)','Wave 4 (Jul 2027)','Wave 5 (Jan 2028)'];
+  makeChart('chart-wave-bar','bar',{
+    labels:waves.map(w=>w.replace(' (','\n(')),
+    datasets:[{label:'To Staff',data:waves.map(w=>r(sum(filtered.filter(x=>x.wave===w),'to_staff'))),
+      backgroundColor:waves.map(w=>waveColor(w)),borderRadius:0}]
+  },{...BAR_LABEL_OPTS});
+
+  // Tower horizontal
+  const towerMap = {};
+  filtered.forEach(x=>{if(!towerMap[x.tower])towerMap[x.tower]={ftes:0};towerMap[x.tower].ftes+=x.ftes;});
+  const towers = Object.entries(towerMap).sort((a,b)=>b[1].ftes-a[1].ftes).slice(0,10);
+  makeChart('chart-tower','bar',{
+    labels:towers.map(t=>t[0].replace('Global Platforms - ','GP-').replace(' & Cat Modeling','')),
+    datasets:[{label:'FTEs',data:towers.map(t=>r(t[1].ftes,1)),backgroundColor:'#0047BB',borderRadius:0}]
+  },{indexAxis:'y',plugins:{legend:{display:false}},...BAR_LABEL_OPTS_H,scales:{...HORIZ_SCALES}});
+
+  // Skill
+  const skillMap = {};
+  filtered.forEach(x=>{if(!skillMap[x.skill])skillMap[x.skill]=0;skillMap[x.skill]+=x.to_staff;});
+  const skills = Object.entries(skillMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  makeChart('chart-skill','bar',{
+    labels:skills.map(s=>s[0].length>22?s[0].slice(0,22)+'…':s[0]),
+    datasets:[{label:'To Staff',data:skills.map(s=>r(s[1],1)),backgroundColor:'#A100FF',borderRadius:0}]
+  },{indexAxis:'y',plugins:{legend:{display:false}},...BAR_LABEL_OPTS_H,scales:{...HORIZ_SCALES}});
+
+  // Approach donut
+  const approaches = {};
+  filtered.forEach(x=>{const k=x.kc_remarks||'Other';if(!approaches[k])approaches[k]=0;approaches[k]++;});
+  const topAppr = Object.entries(approaches).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  makeChart('chart-approach','doughnut',{
+    labels:topAppr.map(a=>a[0]),
+    datasets:[{data:topAppr.map(a=>a[1]),backgroundColor:['#A100FF','#0047BB','#00C566','#FF8C00','#FF3B3B'],borderWidth:0}]
+  },{cutout:'60%',plugins:{legend:{display:true,position:'right',labels:{color:'#4A4A4A',font:{size:11},boxWidth:10}}},scales:{x:{display:false},y:{display:false}}});
+
+  // Apps by region donut
+  const regApps = {};
+  filtered.forEach(x=>{if(!regApps[x.region])regApps[x.region]=0;regApps[x.region]++;});
+  const regList = Object.entries(regApps).sort((a,b)=>b[1]-a[1]);
+  makeChart('chart-apps-region','doughnut',{
+    labels:regList.map(a=>a[0]),
+    datasets:[{data:regList.map(a=>a[1]),backgroundColor:['#0047BB','#A100FF','#00C566','#FF8C00','#FF3B3B'],borderWidth:0}]
+  },{cutout:'60%',plugins:{legend:{display:true,position:'right',labels:{color:'#4A4A4A',font:{size:11},boxWidth:10}}},scales:{x:{display:false},y:{display:false}}});
+}
+
+function renderChartsTab() {
+  const regions = uniq(filtered,'region');
+  makeChart('chart-region-stack','bar',{
+    labels:regions,
+    datasets:[
+      {label:'Identified',data:regions.map(reg=>r(sum(filtered.filter(x=>x.region===reg),'identified'),1)),backgroundColor:'#00C566',borderRadius:0},
+      {label:'To Staff',data:regions.map(reg=>r(sum(filtered.filter(x=>x.region===reg),'to_staff'),1)),backgroundColor:'#A100FF',borderRadius:0}
+    ]
+  },{plugins:{legend:{display:true,labels:{color:'#4A4A4A',font:{size:11},boxWidth:10}}},layout:{padding:{top:26,right:10}},scales:{x:{stacked:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#8A8A8A',font:{size:11}}},y:{stacked:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#8A8A8A',font:{size:11}}}}});
+
+  makeChart('chart-gap-pct','bar',{
+    labels:regions,
+    datasets:[{label:'Gap %',data:regions.map(reg=>{
+      const f=filtered.filter(x=>x.region===reg),ftes=sum(f,'ftes'),ts=sum(f,'to_staff');
+      return ftes>0?r(ts/ftes*100):0;
+    }),backgroundColor:regions.map(reg=>{
+      const f=filtered.filter(x=>x.region===reg),ftes=sum(f,'ftes'),ts=sum(f,'to_staff');
+      const pct=ftes>0?ts/ftes:1;
+      return pct>=0.8?'#FF3B3B':pct>=0.5?'#FF8C00':'#00C566';
+    }),borderRadius:0}]
+  },{plugins:{legend:{display:false}},layout:{padding:{top:26,right:10}}});
+
+  const skillMap2 = {};
+  filtered.forEach(x=>{if(!skillMap2[x.skill])skillMap2[x.skill]={ftes:0,ts:0};skillMap2[x.skill].ftes+=x.ftes;skillMap2[x.skill].ts+=x.to_staff;});
+  const skills2 = Object.entries(skillMap2).sort((a,b)=>b[1].ftes-a[1].ftes).slice(0,12);
+  makeChart('chart-skill-full','bar',{
+    labels:skills2.map(s=>s[0].length>25?s[0].slice(0,25)+'…':s[0]),
+    datasets:[
+      {label:'FTEs Required',data:skills2.map(s=>r(s[1].ftes,1)),backgroundColor:'#0047BB',borderRadius:0},
+      {label:'To Staff',data:skills2.map(s=>r(s[1].ts,1)),backgroundColor:'#A100FF',borderRadius:0}
+    ]
+  },{indexAxis:'y',plugins:{legend:{display:true,labels:{color:'#4A4A4A',font:{size:11},boxWidth:10}}},layout:{padding:{top:4,right:44,bottom:4,left:4}},scales:{x:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#8A8A8A',font:{size:11}}},y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#4A4A4A',font:{size:10}}}}});
+
+  const waves2 = ['Wave 1 (Oct 2026)','Wave 2 (Jan 2027)','Wave 3 (Apr 2027)','Wave 4 (Jul 2027)','Wave 5 (Jan 2028)'];
+  let cumul = 0;
+  const cumulData = waves2.map(w=>{cumul+=r(sum(filtered.filter(x=>x.wave===w),'to_staff'),1);return r(cumul,1);});
+  makeChart('chart-cumulative','line',{
+    labels:waves2.map(w=>w.replace(' (','\n(')),
+    datasets:[{label:'Cumulative To Staff',data:cumulData,borderColor:'#A100FF',backgroundColor:'rgba(161,0,255,0.08)',fill:true,tension:.4,pointBackgroundColor:'#A100FF',pointRadius:5,pointBorderColor:'#fff',pointBorderWidth:2}]
+  },{plugins:{legend:{display:false}},layout:{padding:{top:30,right:10}},scales:{x:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#8A8A8A',font:{size:11}}},y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#8A8A8A',font:{size:11}}}}});
+}
+
+// ── HELPERS FOR CHARTS ────────────────────────────────────────────────────────
+const r_ = (reg, key) => r(sum(filtered.filter(x=>x.region===reg), key), 1);
+const BAR_LABEL_OPTS = {plugins:{legend:{display:true,labels:{color:'#4A4A4A',font:{size:11},boxWidth:10}}},layout:{padding:{top:26,right:10}}};
+const BAR_LABEL_OPTS_H = {plugins:{legend:{display:false}},layout:{padding:{top:4,right:44,bottom:4,left:4}}};
+const HORIZ_SCALES = {x:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#8A8A8A',font:{size:11}}},y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#4A4A4A',font:{size:10}}}};
+
+// ── WAVE CARDS ────────────────────────────────────────────────────────────────
+function renderWaveCards() {
+  const waves = ['Wave 1 (Oct 2026)','Wave 2 (Jan 2027)','Wave 3 (Apr 2027)','Wave 4 (Jul 2027)','Wave 5 (Jan 2028)'];
+  const readyDates = {'Wave 1 (Oct 2026)':'3 Sep 2026','Wave 2 (Jan 2027)':'4 Dec 2026','Wave 3 (Apr 2027)':'4 Mar 2027','Wave 4 (Jul 2027)':'3 Jun 2027','Wave 5 (Jan 2028)':'4 Dec 2027'};
+  const daysLeft = {'Wave 1 (Oct 2026)':114,'Wave 2 (Jan 2027)':206,'Wave 3 (Apr 2027)':296,'Wave 4 (Jul 2027)':387,'Wave 5 (Jan 2028)':571};
+
+  document.getElementById('wave-cards').innerHTML = waves.map(wave => {
+    const wf = filtered.filter(x => x.wave === wave);
+    if(!wf.length) return '';
+    const apps = wf.length;
+    const ftes = Math.round(sum(wf,'ftes'));
+    const id   = Math.round(sum(wf,'identified'));
+    const ts   = Math.round(sum(wf,'to_staff'));
+    const days = daysLeft[wave];
+    const urg = urgencyClass(days);
+
+    const regionMap = {}, towerMap = {}, skillMap = {};
+    wf.filter(x=>x.to_staff>0).forEach(x => {
+      regionMap[x.region] = (regionMap[x.region]||0)+x.to_staff;
+      towerMap[x.tower]   = (towerMap[x.tower]||0)+x.to_staff;
+      skillMap[x.skill]   = (skillMap[x.skill]||0)+x.to_staff;
+    });
+    const topRegions = Object.entries(regionMap).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([k,v])=>`<span class="wave-pill pill-region">${k}: ${Math.round(v)}</span>`).join('');
+    const topTowers  = Object.entries(towerMap).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([k,v])=>`<span class="wave-pill pill-tower">${k.replace('Global Platforms - Reinsurance & Cat Modeling','GPLAT Reins.')}: ${Math.round(v)}</span>`).join('');
+    const topSkills  = Object.entries(skillMap).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>`<span class="wave-pill pill-skill">${k.length>30?k.slice(0,30)+'…':k}: ${Math.round(v)}</span>`).join('');
+    const pctCov = ftes>0 ? Math.round(id/ftes*100) : 0;
+    const barClass = pctCov >= 50 ? 'pbar-green' : pctCov >= 20 ? 'pbar-amber' : 'pbar-red';
+
+    return `<div class="wave-card">
+      <div class="wave-header ${urg}">
+        ${wave} &nbsp;·&nbsp; <span class="deadline-badge deadline-${urg}">Ready by ${readyDates[wave]}</span> &nbsp;·&nbsp; ${days} days
+      </div>
+      <div class="wave-body">
+        <div class="wave-stat"><span>Apps</span><span>${apps}</span></div>
+        <div class="wave-stat"><span>FTEs Required</span><span>${ftes}</span></div>
+        <div class="wave-stat"><span>Identified</span><span>${id}</span></div>
+        <div class="wave-stat"><span>To Staff</span><span style="color:${ts>0?'#fca5a5':'#86efac'}">${ts}</span></div>
+        <div style="margin:8px 0 4px;font-size:11px;color:var(--text3)">Coverage: ${pctCov}%</div>
+        <div class="pbar"><div class="pbar-fill ${barClass}" style="width:${pctCov}%"></div></div>
+        ${topRegions?`<div class="wave-sub"><div class="wave-sub-title">Region Focus</div>${topRegions}</div>`:''}
+        ${topTowers?`<div class="wave-sub"><div class="wave-sub-title">Tower Focus</div>${topTowers}</div>`:''}
+        ${topSkills?`<div class="wave-sub"><div class="wave-sub-title">Skill Focus</div>${topSkills}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── TABLE ─────────────────────────────────────────────────────────────────────
+function sortTable(key) {
+  if(sortKey===key) sortDir*=-1; else {sortKey=key; sortDir=1;}
+  document.querySelectorAll('.sort-arrow').forEach(el=>el.textContent='↕');
+  const arrow = document.getElementById('sort-'+key);
+  if(arrow) arrow.textContent = sortDir===1?'↑':'↓';
+  renderTable();
+}
+
+function renderTable() {
+  const sorted = [...filtered].sort((a,b) => {
+    const av=a[sortKey]??'', bv=b[sortKey]??'';
+    if(typeof av==='number') return (av-bv)*sortDir;
+    return String(av).localeCompare(String(bv))*sortDir;
+  });
+  const start = (page-1)*PAGE_SIZE;
+  const pageData = sorted.slice(start, start+PAGE_SIZE);
+
+  const remarkBadge = r => {
+    if(!r) return '';
+    if(r.includes('New onboard')) return `<span class="badge badge-red">New onboard</span>`;
+    if(r.includes('Repurpose')) return `<span class="badge badge-blue">Repurpose</span>`;
+    if(r.includes('Already')) return `<span class="badge badge-green">Supported</span>`;
+    if(r.includes('Partial')) return `<span class="badge badge-amber">Partial</span>`;
+    return `<span class="badge badge-gray">${r.slice(0,16)}</span>`;
+  };
+  const daysBadge = d => {
+    if(d===null) return '—';
+    const cls = d<=150?'badge-red':d<=300?'badge-amber':'badge-green';
+    return `<span class="badge ${cls}">${d}</span>`;
+  };
+  const regionBadge = r => {
+    const cls={'AUSPAC':'badge-blue','NAO':'badge-red','EO':'badge-red','GPLAT':'badge-amber','ASIA':'badge-purple'}[r]||'badge-gray';
+    return `<span class="badge ${cls}">${r}</span>`;
+  };
+  const waveBadge = w => {
+    const cls={'Wave 1 (Oct 2026)':'badge-red','Wave 2 (Jan 2027)':'badge-red','Wave 3 (Apr 2027)':'badge-amber','Wave 4 (Jul 2027)':'badge-amber','Wave 5 (Jan 2028)':'badge-green'}[w]||'badge-gray';
+    return `<span class="badge ${cls}">${w.replace(' (Oct 2026)','').replace(' (Jan 2027)','').replace(' (Apr 2027)','').replace(' (Jul 2027)','').replace(' (Jan 2028)','')}</span>`;
+  };
+
+  document.getElementById('app-tbody').innerHTML = pageData.map(x => `
+    <tr>
+      <td class="td-app" title="${x.app}">${x.app}</td>
+      <td>${regionBadge(x.region)}</td>
+      <td style="font-size:12px;color:var(--text2)">${x.tower}</td>
+      <td>${waveBadge(x.wave)}</td>
+      <td style="font-size:12px;white-space:nowrap">${x.ready_by}</td>
+      <td>${daysBadge(x.days_left)}</td>
+      <td style="font-family:var(--mono);text-align:right">${Math.round(x.ftes)}</td>
+      <td style="font-family:var(--mono);text-align:right;color:var(--ok)">${Math.round(x.identified)}</td>
+      <td style="font-family:var(--mono);text-align:right;color:${x.to_staff>0?'#fca5a5':'var(--text2)'}">${Math.round(x.to_staff)}</td>
+      <td>${remarkBadge(x.kc_remarks)}</td>
+    </tr>`).join('');
+
+  const total = filtered.length;
+  document.getElementById('pag-info').textContent = `Showing ${start+1}–${Math.min(start+PAGE_SIZE,total)} of ${total}`;
+  document.getElementById('btn-prev').disabled = page===1;
+  document.getElementById('btn-next').disabled = start+PAGE_SIZE >= total;
+}
+
+function prevPage() { if(page>1){page--;renderTable();} }
+function nextPage() { page++;renderTable(); }
+
+// ── SKILLS BREAKUP TAB ────────────────────────────────────────────────────────
+function renderSkillsTab() {
+  const searchVal = (document.getElementById('skills-search')?.value||'').toLowerCase().trim();
+  const ri = n => Math.round(n); // whole number rounding for FTEs
+  let html = '';
+  const allRegions = uniq(filtered,'region');
+
+  allRegions.forEach(region => {
+    const regionData = filtered.filter(x => x.region === region);
+    const skillMap = {};
+    regionData.forEach(x => {
+      if(!x.skill) return;
+      if(!skillMap[x.skill]) skillMap[x.skill] = {appList:[], ftes:0, identified:0, to_staff:0};
+      skillMap[x.skill].appList.push(x);
+      skillMap[x.skill].ftes       += x.ftes;
+      skillMap[x.skill].identified += x.identified;
+      skillMap[x.skill].to_staff   += x.to_staff;
+    });
+
+    let rows = Object.entries(skillMap)
+      .map(([skill, d]) => ({skill, apps: d.appList.length, appList: d.appList, ftes: d.ftes, identified: d.identified, to_staff: d.to_staff}))
+      .sort((a,b) => b.to_staff - a.to_staff);
+
+    if(searchVal) {
+      rows = rows.filter(x =>
+        x.skill.toLowerCase().includes(searchVal) ||
+        region.toLowerCase().includes(searchVal) ||
+        x.appList.some(a => a.app.toLowerCase().includes(searchVal))
+      );
+    }
+    if(rows.length === 0) return;
+
+    const totalFTEs = ri(rows.reduce((a,x)=>a+x.ftes,0));
+    const totalID   = ri(rows.reduce((a,x)=>a+x.identified,0));
+    const totalTS   = ri(rows.reduce((a,x)=>a+x.to_staff,0));
+    const totalApps = rows.reduce((a,x)=>a+x.apps,0);
+
+    const regionColor = {'AUSPAC':'#0047BB','NAO':'#C82020','EO':'#C82020','GPLAT':'#8a5a00','ASIA':'#6600CC'}[region]||'#4A4A4A';
+
+    const rowsHtml = rows.map((row, ri2) => {
+      const uid = `sk_${region}_${ri2}`;
+      const pctGap = row.ftes > 0 ? Math.min(100, Math.round(row.to_staff / row.ftes * 100)) : 0;
+      const barColor = pctGap >= 80 ? 'var(--danger)' : pctGap >= 40 ? 'var(--warn)' : 'var(--ok)';
+      const isUnknown = row.skill.toLowerCase().includes('unknown');
+
+      // App rows (hidden by default)
+      const appRowsHtml = row.appList.map(a => {
+        const appFTE = ri(a.ftes);
+        const appID  = ri(a.identified);
+        const appTS  = ri(a.to_staff);
+        return `<tr class="sk-app-row" id="app-${uid}" style="display:none;background:var(--surface2)">
+          <td style="padding-left:40px;font-size:12px;color:var(--text2);border-left:3px solid ${regionColor}">
+            <span style="color:var(--text3);margin-right:6px">└</span>${a.app}
+          </td>
+          <td class="r" style="font-size:12px">—</td>
+          <td class="r" style="font-family:var(--mono);font-size:12px;color:var(--text2)">${appFTE}</td>
+          <td class="r" style="font-family:var(--mono);font-size:12px;color:var(--ok)">${appID}</td>
+          <td class="r" style="font-family:var(--mono);font-size:12px;color:${appTS>0?'var(--danger)':'var(--text2)'}">${appTS}</td>
+          <td></td>
+        </tr>`;
+      }).join('');
+
+      return `<tr class="sk-skill-row" onclick="toggleApps('${uid}')" style="cursor:pointer">
+          <td style="font-weight:${isUnknown?'600':'500'};color:${isUnknown?'var(--warn)':'var(--text)'}">
+            <span class="sk-expand-icon" id="icon-${uid}" style="display:inline-block;width:16px;font-size:11px;color:var(--text3);transition:transform .2s">▶</span>
+            ${isUnknown ? '⚠ ' : ''}${row.skill}
+          </td>
+          <td class="r">
+            <span class="sk-app-count">${row.apps}</span>
+          </td>
+          <td class="r" style="font-family:var(--mono)">${ri(row.ftes)}</td>
+          <td class="r" style="font-family:var(--mono);color:var(--ok)">${ri(row.identified)}</td>
+          <td class="r" style="font-family:var(--mono);color:${row.to_staff>0?'var(--danger)':'var(--text)'}">${ri(row.to_staff)}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="flex:1;height:6px;background:var(--border);overflow:hidden">
+                <div style="height:6px;width:${pctGap}%;background:${barColor}"></div>
+              </div>
+              <span style="font-size:11px;font-family:var(--mono);color:${barColor};min-width:32px;text-align:right">${pctGap}%</span>
+            </div>
+          </td>
+        </tr>
+        ${appRowsHtml}`;
+    }).join('');
+
+    html += `
+    <div class="sk-region-block">
+      <div class="sk-region-header" style="border-left:4px solid ${regionColor}">
+        <span class="sk-region-name" style="color:${regionColor}">${region}</span>
+        <span class="sk-region-stats">
+          <span class="sk-stat">${totalApps} apps</span>
+          <span class="sk-stat-sep">·</span>
+          <span class="sk-stat">FTEs Required: <strong>${totalFTEs}</strong></span>
+          <span class="sk-stat-sep">·</span>
+          <span class="sk-stat" style="color:var(--ok)">Identified: <strong>${totalID}</strong></span>
+          <span class="sk-stat-sep">·</span>
+          <span class="sk-stat" style="color:var(--danger)">To Staff: <strong>${totalTS}</strong></span>
+        </span>
+      </div>
+      <table class="sk-table">
+        <thead>
+          <tr>
+            <th>Skill Category / Application</th>
+            <th class="r">Apps</th>
+            <th class="r">FTEs Required</th>
+            <th class="r">Identified</th>
+            <th class="r">To Staff</th>
+            <th style="width:180px">Staffing Gap</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+          <tr style="background:var(--surface2);font-weight:700;border-top:2px solid var(--border)">
+            <td style="padding-left:16px">Total — ${region}</td>
+            <td class="r">${totalApps}</td>
+            <td class="r" style="font-family:var(--mono)">${totalFTEs}</td>
+            <td class="r" style="font-family:var(--mono);color:var(--ok)">${totalID}</td>
+            <td class="r" style="font-family:var(--mono);color:var(--danger)">${totalTS}</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+  });
+
+  document.getElementById('skills-content').innerHTML = html ||
+    '<div style="padding:24px;color:var(--text3);text-align:center">No results match your search.</div>';
+}
+
+function toggleApps(uid) {
+  const rows = document.querySelectorAll(`#app-${uid}`);
+  const icon = document.getElementById(`icon-${uid}`);
+  const isHidden = rows[0]?.style.display === 'none';
+  rows.forEach(r => r.style.display = isHidden ? 'table-row' : 'none');
+  if(icon) icon.style.transform = isHidden ? 'rotate(90deg)' : '';
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const tabs=['overview','apps','skills'];
+    t.classList.toggle('active', tabs[i]===name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='apps') renderTable();
+  if(name==='skills') renderSkillsTab();
+  if(name==='overview') { renderWaveCards(); renderRegionSummary(); }
+}
+
+// ── RENDER ALL ────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderMetrics();
+  renderWaveCards();
+  renderRegionSummary();
+  const activeTab = document.querySelector('.tab.active');
+  if(activeTab) {
+    const tabs=['overview','apps','skills'];
+    const idx=[...document.querySelectorAll('.tab')].indexOf(activeTab);
+    const name=tabs[idx];
+    if(name==='apps') renderTable();
+    if(name==='skills') renderSkillsTab();
+  }
+}
+
+// ── REGION SUMMARY TABLE ──────────────────────────────────────────────────────
+function renderRegionSummary() {
+  const regions = uniq(filtered,'region');
+  let html = '';
+  let totalApps=0, totalFTEs=0, totalID=0, totalTS=0;
+
+  regions.forEach(reg => {
+    const rd   = filtered.filter(x=>x.region===reg);
+    const apps = rd.length;
+    const ftes = Math.round(sum(rd,'ftes'));
+    const id   = Math.round(sum(rd,'identified'));
+    const ts   = Math.round(sum(rd,'to_staff'));
+    const gap    = ftes>0 ? Math.round(ts/ftes*100) : 0;
+    const pctCov = ftes>0 ? Math.round(id/ftes*100) : 0;
+    const gapBadgeColor = gap>=80?'badge-red':gap>=50?'badge-amber':'badge-green';
+    totalApps+=apps; totalFTEs+=ftes; totalID+=id; totalTS+=ts;
+    html += `<tr>
+      <td><strong>${reg}</strong></td>
+      <td class="r">${apps}</td>
+      <td class="r" style="font-family:var(--mono)">${ftes}</td>
+      <td class="r" style="font-family:var(--mono);color:var(--ok)">${id}</td>
+      <td class="r" style="font-family:var(--mono);color:${ts>0?'var(--danger)':'var(--text)'}">${ts}</td>
+      <td class="r"><span class="badge ${gapBadgeColor}">${gap}%</span></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="flex:1;height:6px;background:var(--border);overflow:hidden">
+            <div style="height:6px;width:${pctCov}%;background:var(--ok)"></div>
+          </div>
+          <span style="font-size:10px;color:var(--text3);min-width:30px">${pctCov}%</span>
+        </div>
+      </td>
+    </tr>`;
+  });
+  const tGap = totalFTEs>0 ? Math.round(totalTS/totalFTEs*100) : 0;
+  html += `<tr style="background:var(--surface2);font-weight:700;border-top:2px solid var(--border)">
+    <td>Total</td>
+    <td class="r">${totalApps}</td>
+    <td class="r" style="font-family:var(--mono)">${totalFTEs}</td>
+    <td class="r" style="font-family:var(--mono);color:var(--ok)">${totalID}</td>
+    <td class="r" style="font-family:var(--mono);color:var(--danger)">${totalTS}</td>
+    <td class="r"><span class="badge badge-red">${tGap}%</span></td>
+    <td></td>
+  </tr>`;
+  const el = document.getElementById('region-summary-body');
+  if(el) el.innerHTML = html;
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+initFilters();
+document.getElementById('results-count').textContent = `${RAW.length} apps`;
+renderAll();
+renderTable();
+</script>
+
+<!-- SKILLS BREAKUP TAB PANEL (inserted here to keep HTML valid) -->
+<script>
+// Inject skills tab panel into DOM
+(function(){
+  const skillsPanel = document.createElement('div');
+  skillsPanel.className = 'tab-panel';
+  skillsPanel.id = 'tab-skills';
+  skillsPanel.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:4px">Skills Breakup — By Region</div>
+        <div style="font-size:12px;color:var(--text2)">Skill categories required, identified and to staff — grouped by region</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input id="skills-search" class="search-box" placeholder="Search skill or region…" type="text" style="width:240px"
+          oninput="renderSkillsTab()">
+        <button class="btn-reset" onclick="document.getElementById('skills-search').value='';renderSkillsTab()">Clear</button>
+      </div>
+    </div>
+    <div id="skills-content"></div>`;
+  document.querySelector('.main').appendChild(skillsPanel);
+})();
+</script>
+</body>
+</html>
