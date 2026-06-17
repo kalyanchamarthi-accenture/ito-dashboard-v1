@@ -17,8 +17,8 @@ USAGE
 
 WHAT IT DOES
 ------------
-  1. Reads the latest Excel file
-  2. Filters Panama=N AND Column X=Yes (191 apps)
+  1. Reads the latest Excel file (Consolidated App inventory sheet)
+  2. Filters Panama = N (column O)
   3. Recalculates FTEs, wave labels, staff-ready-by dates, days left
   4. Injects fresh data into index.html (the dashboard)
   5. Updates the refresh timestamp in the header
@@ -41,20 +41,40 @@ from datetime import timedelta, date
 #  CONFIGURATION — Edit these to match your setup
 # ══════════════════════════════════════════════════════════════════════════════
 
-EXCEL_FILE               = "Post_added_new_Apps_BAFO_ITO_Apps_Inventory_Updated.xlsx"
-SHEET_NAME               = "Consolidated App inventory"
-HEADER_ROW               = 3
-DASHBOARD_HTML           = "index.html"
-PANAMA_COL               = "Panama (Y/N)"
-PANAMA_FILTER            = "no"
-STAFFING_ANALYSIS_COL_INDEX = 23
-STAFFING_ANALYSIS_FILTER = "yes"
-ONBOARDING_BUFFER_WEEKS  = 4
-GITHUB_REPO_URL          = ""
-GITHUB_BRANCH            = "main"
-GITHUB_PAGES_URL         = ""
-CONFIG_FILE              = ".dashboard_config"
+# Excel source file — update this whenever the filename changes
+EXCEL_FILE   = "BAFO ITO Apps Inventory & Transition timelines_June1st - KC_20260617.xlsx"
 
+# Sheet name (must match exactly — case sensitive)
+SHEET_NAME   = "Consolidated App inventory"
+
+# Header row (0-indexed; row 4 in Excel = index 3)
+HEADER_ROW   = 3
+
+# Dashboard HTML file
+DASHBOARD_HTML = "index.html"
+
+# Panama filter — Column O (index 14), value = "No"
+PANAMA_COL    = "Panama (Y/N)"
+PANAMA_FILTER = "no"
+
+# Onboarding buffer before wave date
+ONBOARDING_BUFFER_WEEKS = 4
+
+# ── Column indices (0-based) — confirmed from local file ─────────────────────
+COL_TOWER        = 1    # B  — Tower
+COL_APP_NAME     = 2    # C  — Application Name
+COL_PANAMA       = 14   # O  — Panama (Y/N)
+COL_FTE          = 21   # V  — ABP FTEs for Transition
+COL_REGION       = 23   # X  — Region
+COL_WAVE         = 25   # Z  — Transition Waves
+COL_CATEGORY     = 27   # AB — Staffing approach
+COL_SKILLS       = 28   # AC — Skills
+COL_RESOURCES    = 29   # AD — Resources
+COL_IDENTIFIED   = 30   # AE — # Identified
+COL_TO_STAFF     = 31   # AF — # To Staff
+COL_ALREADY_SUP  = 32   # AG — # Already supported
+
+# Wave label map — add new waves here if needed
 WAVE_LABELS = {
     "2026-10-01": "Wave 1 (Oct 2026)",
     "2027-01-01": "Wave 2 (Jan 2027)",
@@ -62,6 +82,12 @@ WAVE_LABELS = {
     "2027-07-01": "Wave 4 (Jul 2027)",
     "2028-01-01": "Wave 5 (Jan 2028)",
 }
+
+# GitHub settings — saved automatically by --setup
+GITHUB_REPO_URL  = ""
+GITHUB_BRANCH    = "main"
+GITHUB_PAGES_URL = ""
+CONFIG_FILE      = ".dashboard_config"
 
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -120,13 +146,12 @@ def run_setup():
             subprocess.run([sys.executable, "-m", "pip", "install", pkg], check=True)
             ok(f"{pkg} installed")
 
-    # Repo URL
     print("""
   ─────────────────────────────────────────────────────────
   CREATE YOUR GITHUB REPO (if not done yet)
   ─────────────────────────────────────────────────────────
   1. Go to:  https://github.com/new
-  2. Name:   ito-staffing-dashboard
+  2. Name:   ito-dashboard
   3. Set to: Public
   4. Click:  Create repository
   5. Copy the HTTPS URL  (e.g. https://github.com/user/repo.git)
@@ -167,7 +192,6 @@ def run_setup():
         subprocess.run(["git", "remote", "add", "origin", repo_url], cwd=cwd, check=True)
         ok(f"Remote set → {repo_url}")
     else:
-        # Update URL in case it changed
         subprocess.run(["git", "remote", "set-url", "origin", repo_url], cwd=cwd)
         ok(f"Remote updated → {repo_url}")
 
@@ -181,18 +205,13 @@ def run_setup():
     # README
     readme = os.path.join(cwd, "README.md")
     if not os.path.exists(readme):
+        user_repo = f"{m.group(1)}/{m.group(2)}" if m else "user/repo"
         with open(readme, "w") as f:
-            f.write(f"# ITO Staffing Dashboard\n\n"
-                    f"Live dashboard: {pages_url}\n\n"
-                    f"## Refresh\n\n"
-                    f"```bash\npython refresh.py --push\n```\n")
+            f.write(f"# ITO Staffing Dashboard\n\nLive: {pages_url}\n\n"
+                    f"## Refresh\n\n```bash\npython refresh.py --push\n```\n")
         ok("README.md created")
 
-    # Derive user/repo for instructions
-    user_repo = ""
-    if m:
-        user_repo = f"{m.group(1)}/{m.group(2)}"
-
+    user_repo = f"{m.group(1)}/{m.group(2)}" if m else "user/repo"
     print(f"""
   ═══════════════════════════════════════════════════════════
   ✅  SETUP COMPLETE
@@ -200,22 +219,18 @@ def run_setup():
 
   NEXT STEPS:
 
-  1. Make sure index.html exists in this folder
-     (rename ITO_Staffing_Dashboard.html → index.html)
-
-  2. Do your first push:
+  1. Do your first push:
          python refresh.py --push
 
-  3. Enable GitHub Pages (one-time, in the browser):
+  2. Enable GitHub Pages (one-time, in the browser):
      → https://github.com/{user_repo}/settings/pages
      → Source: Deploy from branch → {branch} → / (root) → Save
 
-  4. Share this URL with your team:
+  3. Share this URL with your team:
      → {pages_url}
 
-  5. Every future update:
+  4. Every future update:
          python refresh.py --push
-     That's it. Everyone sees the new data within ~60 seconds.
   ═══════════════════════════════════════════════════════════
 """)
 
@@ -236,6 +251,7 @@ def refresh_dashboard():
         except Exception:
             return str(d)
 
+    # ── 1. Load Excel ──────────────────────────────────────────────────────────
     step(1, 5, f"Reading Excel: {EXCEL_FILE}")
     if not os.path.exists(EXCEL_FILE):
         err(f"Excel not found: {EXCEL_FILE}\n"
@@ -246,20 +262,32 @@ def refresh_dashboard():
     except Exception as e:
         err(f"Cannot read Excel: {e}")
 
-    step(2, 5, "Filtering apps (Panama=N AND Column X=Yes)")
-    col_x = df.columns[STAFFING_ANALYSIS_COL_INDEX]
-    df_v = df[
-        (df[PANAMA_COL].astype(str).str.strip().str.lower() == PANAMA_FILTER) &
-        (df[col_x].astype(str).str.strip().str.lower() == STAFFING_ANALYSIS_FILTER)
-    ].copy()
-    if len(df_v) == 0:
-        err("No rows matched filter. Check column indices and values.")
-    ok(f"{len(df_v)} apps matched")
+    # ── 2. Filter Panama = N ───────────────────────────────────────────────────
+    step(2, 5, "Filtering apps (Panama = N)")
 
+    # Parse wave column BEFORE filtering to avoid dtype conflict on copied slice
+    wave_col_name = df.columns[COL_WAVE]
+    df[wave_col_name] = pd.to_datetime(df[wave_col_name], errors="coerce")
+
+    df_valid = df[
+        df[PANAMA_COL].astype(str).str.strip().str.lower() == PANAMA_FILTER
+    ].copy()
+
+    if len(df_valid) == 0:
+        err(f"No rows matched Panama=N filter.\n"
+            f"  Check that PANAMA_COL='{PANAMA_COL}' exists and contains 'No' values.")
+    ok(f"{len(df_valid)} apps matched (Panama = N)")
+
+    # ── 3. Process data ────────────────────────────────────────────────────────
     step(3, 5, "Building dashboard payload")
-    df_v["Transition Waves"] = pd.to_datetime(df_v["Transition Waves"], errors="coerce")
-    for col in ["# Identified", "# To Staff", "ABP FTEs for Transition"]:
-        df_v[col] = pd.to_numeric(df_v[col], errors="coerce").fillna(0)
+
+    def safe_float(val):
+        """Safely convert any value to a rounded integer, default 0."""
+        try:
+            f = float(val)
+            return 0 if pd.isna(f) else round(f)
+        except (ValueError, TypeError):
+            return 0
 
     def wave_label(ts):
         if pd.isna(ts): return "Unassigned"
@@ -273,34 +301,44 @@ def refresh_dashboard():
         if pd.isna(ts): return None
         return ((ts - timedelta(weeks=ONBOARDING_BUFFER_WEEKS)).date() - today).days
 
+    def clean(val):
+        s = str(val).strip()
+        return "" if s in ("nan", "None", "") else s
+
     rows = []
-    for _, r in df_v.iterrows():
-        ftes = round(float(r["# Identified"]) + float(r["# To Staff"]), 1)
+    for _, r in df_valid.iterrows():
         rows.append({
-            "app":        str(r["Application Name "]).strip(),
-            "tower":      str(r["Tower"]).strip()          if pd.notna(r["Tower"])          else "",
-            "region":     str(r["Region"]).strip()         if pd.notna(r["Region"])         else "",
-            "skill":      str(r["Skill category"]).strip() if pd.notna(r["Skill category"]) else "",
-            "ftes":       ftes,
-            "identified": round(float(r["# Identified"]), 1),
-            "to_staff":   round(float(r["# To Staff"]),   1),
-            "wave":       wave_label(r["Transition Waves"]),
-            "ready_by":   ready_by(r["Transition Waves"]),
-            "days_left":  days_left(r["Transition Waves"]),
-            "kc_remarks": str(r["KC Remarks"]).strip() if pd.notna(r.get("KC Remarks")) else "",
+            "app":               clean(r.iloc[COL_APP_NAME]),
+            "tower":             clean(r.iloc[COL_TOWER]),
+            "region":            clean(r.iloc[COL_REGION]),
+            "skill":             clean(r.iloc[COL_SKILLS]),
+            "category":          clean(r.iloc[COL_CATEGORY]),
+            "resources":         clean(r.iloc[COL_RESOURCES]),
+            "ftes":              safe_float(r.iloc[COL_FTE]),
+            "identified":        safe_float(r.iloc[COL_IDENTIFIED]),
+            "to_staff":          safe_float(r.iloc[COL_TO_STAFF]),
+            "reclaim":           0,
+            "already_supported": safe_float(r.iloc[COL_ALREADY_SUP]),
+            "wave":              wave_label(r.iloc[COL_WAVE]),
+            "ready_by":          ready_by(r.iloc[COL_WAVE]),
+            "days_left":         days_left(r.iloc[COL_WAVE]),
         })
 
-    n      = len(rows)
-    ftes_t = round(sum(r["ftes"]       for r in rows))
-    id_t   = round(sum(r["identified"] for r in rows))
-    ts_t   = round(sum(r["to_staff"]   for r in rows))
-    rdate  = fmt_date(pd.Timestamp(today))
-    ok(f"{n} apps | FTEs Required: {ftes_t} | Identified: {id_t} | To Staff: {ts_t}")
+    n       = len(rows)
+    ftes_t  = sum(r["ftes"]              for r in rows)
+    id_t    = sum(r["identified"]        for r in rows)
+    ts_t    = sum(r["to_staff"]          for r in rows)
+    as_t    = sum(r["already_supported"] for r in rows)
+    rdate   = fmt_date(pd.Timestamp(today))
 
-    step(4, 5, f"Injecting into {DASHBOARD_HTML}")
+    ok(f"{n} apps | FTEs: {ftes_t} | Identified: {id_t} | "
+       f"To Staff: {ts_t} | Already Supp: {as_t}")
+
+    # ── 4. Inject into HTML ────────────────────────────────────────────────────
+    step(4, 5, f"Injecting data into {DASHBOARD_HTML}")
     if not os.path.exists(DASHBOARD_HTML):
-        err(f"{DASHBOARD_HTML} not found.\n"
-            "  Rename ITO_Staffing_Dashboard.html → index.html")
+        err(f"{DASHBOARD_HTML} not found in current folder.\n"
+            "  Make sure index.html is in the same folder as refresh.py")
 
     with open(DASHBOARD_HTML, "r", encoding="utf-8") as f:
         html = f.read()
@@ -312,7 +350,8 @@ def refresh_dashboard():
         html, count=1, flags=re.DOTALL
     )
     if subs == 0:
-        err("Could not find 'const RAW = [...]' in HTML. Template may be corrupted.")
+        err("Could not find 'const RAW = [...]' in the HTML.\n"
+            "  The dashboard template may be corrupted.")
 
     new_html = re.sub(
         r"\d+ apps\s*&nbsp;·&nbsp;\s*Refreshed[^<]*",
@@ -324,7 +363,8 @@ def refresh_dashboard():
         f.write(new_html)
     ok(f"Saved → {os.path.abspath(DASHBOARD_HTML)}")
 
-    return {"n": n, "ftes": ftes_t, "id": id_t, "ts": ts_t, "date": rdate}
+    return {"n": n, "ftes": ftes_t, "id": id_t, "ts": ts_t,
+            "as_": as_t, "date": rdate}
 
 
 # ── GITHUB PUSH ───────────────────────────────────────────────────────────────
@@ -357,7 +397,7 @@ def push_to_github(msg=None, stats=None):
         origin = repo.create_remote("origin", GITHUB_REPO_URL)
         ok(f"Remote 'origin' set → {GITHUB_REPO_URL}")
 
-    # Stage all relevant files
+    # Stage files
     to_stage = [DASHBOARD_HTML, "refresh.py", ".gitignore", CONFIG_FILE, "README.md"]
     for f in to_stage:
         if os.path.exists(f):
@@ -457,6 +497,7 @@ Examples:
   FTEs Req  : {stats['ftes']}
   Identified: {stats['id']}
   To Staff  : {stats['ts']}
+  Alr. Supp : {stats['as_']}
   Refreshed : {stats['date']}""")
 
     if args.push and GITHUB_PAGES_URL:
